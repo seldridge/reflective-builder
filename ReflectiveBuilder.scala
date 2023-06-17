@@ -3,6 +3,21 @@
 import scala.collection.mutable
 import scala.util.matching.Regex
 
+object Exceptions {
+  case class Method(
+      className: String,
+      methodName: String,
+      methodTypes: Seq[Any],
+      cause: Throwable
+  ) extends Exception(
+        s"""Class '$className' does not contain method '$methodName' that can accept arguments of types '${methodTypes
+            .mkString(
+              ", "
+            )}'. (Did you misspell the method name or are using the wrong arguments?)""",
+        cause
+      )
+}
+
 /** A utility that can reflectively construct a Scala class, with parameters,
   * and then call a method on it (also with parameters).
   */
@@ -11,19 +26,17 @@ object ReflectiveBuilder extends App {
   /** Try to convert a string to a Scala type. */
   private def stringToAny(str: String): Any = {
 
-    val classPattern = "([a-zA-Z0-9_$.]+)\\((.+)\\)".r
+    /* Something that looks like object creation, e.g., "Foo(42)" */
+    val classPattern = "([a-zA-Z0-9_$.]+)\\((.*)\\)".r
 
     str match {
-      case boolean @ ("false" | "true") => boolean.toBoolean
-      case integer if integer.forall(_.isDigit) =>
-        integer.toInt.asInstanceOf[Int]
+      case boolean if boolean.toBooleanOption.isDefined => boolean.toBoolean
+      case integer if integer.toIntOption.isDefined     => integer.toInt
+      case float if float.toDoubleOption.isDefined      => float.toDouble
       case classPattern(a, b) =>
         val arguments = b.split(',').map(stringToAny)
         Class.forName(a).getConstructors()(0).newInstance(arguments.toSeq: _*)
-      case unknown =>
-        throw new java.lang.IllegalArgumentException(
-          s"Cannot handle input '$unknown'"
-        )
+      case string => str
     }
   }
 
@@ -41,7 +54,16 @@ object ReflectiveBuilder extends App {
           throw new java.lang.IllegalArgumentException(
             "--object can only be specified once"
           )
-        obj = Some(stringToAny(value))
+        obj =
+          try {
+            Some(stringToAny(value))
+          } catch {
+            case e: java.lang.ClassNotFoundException =>
+              throw new java.lang.ClassNotFoundException(
+                s"Unable to reflectively construct object '$value'. (Did you misspell it?)",
+                e
+              )
+          }
         tail
       case "--debug" :: tail =>
         debug = true
@@ -54,7 +76,15 @@ object ReflectiveBuilder extends App {
         methodName = Some(name)
         tail
       case "--argument" :: value :: tail =>
-        methodArguments.append(stringToAny(value))
+        try {
+          methodArguments.append(stringToAny(value))
+        } catch {
+          case e: java.lang.ClassNotFoundException =>
+            throw new java.lang.ClassNotFoundException(
+              s"Unable to reflectively construct argument '$value'. (Did you misspell it?)",
+              e
+            )
+        }
         tail
       case unknown :: _ =>
         throw new java.lang.IllegalArgumentException(
@@ -95,7 +125,17 @@ object ReflectiveBuilder extends App {
   }
 
   private val method =
-    obj.get.getClass().getMethod(methodName.get, methodTypes.toSeq: _*)
+    try {
+      obj.get.getClass().getMethod(methodName.get, methodTypes.toSeq: _*)
+    } catch {
+      case e: java.lang.NoSuchMethodException =>
+        throw new Exceptions.Method(
+          obj.get.getClass().getName(),
+          methodName.get,
+          methodTypes.toSeq,
+          e
+        )
+    }
 
   private val result = method.invoke(obj.get, methodArguments.toSeq: _*)
 

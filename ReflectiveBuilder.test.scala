@@ -10,6 +10,7 @@ object Objects {
     def apply(addend: Int): String = s"a + $addend is ${a + addend}"
     def invert(bool: Boolean): Boolean = !bool
     def invert(bar: Bar): Bar = Bar(invert(bar.bool))
+    def echo(str: String): String = str
   }
 
   case class Bar(bool: Boolean)
@@ -81,6 +82,73 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
         )
       )
     } should contain("Bar(true)")
+  }
+
+  it should "work for methods with string arguments" in {
+    getStdOutLines {
+      ReflectiveBuilder.main(
+        Array(
+          "--object",
+          "Objects$Foo(43)",
+          "--method",
+          "echo",
+          "--argument",
+          "Hello world!"
+        )
+      )
+    } should contain("Hello world!")
+  }
+
+  "Error behavior of ReflectiveBuilder" should "provide a good error message if the class isn't found" in {
+    val exception =
+      the[java.lang.ClassNotFoundException] thrownBy ReflectiveBuilder.main(
+        Array(
+          "--object",
+          "Foo()",
+          "--method",
+          "bar"
+        )
+      )
+    exception.getMessage should include(
+      "Unable to reflectively construct object 'Foo()'. (Did you misspell it?)"
+    )
+  }
+
+  it should "provide a good error message if the argument isn't found" in {
+    val exception =
+      the[java.lang.ClassNotFoundException] thrownBy ReflectiveBuilder.main(
+        Array(
+          "--object",
+          "Objects$Foo(43)",
+          "--method",
+          "invert",
+          "--argument",
+          "Baz()"
+        )
+      )
+    exception.getMessage should include(
+      "Unable to reflectively construct argument 'Baz()'. (Did you misspell it?)"
+    )
+  }
+
+  it should "provide a good error message if the method isn't found" in {
+    val exception =
+      the[Exceptions.Method] thrownBy
+        ReflectiveBuilder.main(
+          Array(
+            "--object",
+            "Objects$Foo(43)",
+            "--method",
+            "bar",
+            "--argument",
+            "42",
+            "--argument",
+            "false"
+          )
+        )
+    exception.getMessage should include(
+      "Class 'Objects$Foo' does not contain method 'bar' that can accept arguments of types 'int, boolean'. (Did you misspell the method name or are using the wrong arguments?)"
+    )
   }
 
 }

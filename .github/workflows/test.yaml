@@ -1,0 +1,18 @@
+name: Build and Test
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install scala-cli
+        run: |
+          mkdir -p usr/bin
+          curl -fL https://github.com/Virtuslab/scala-cli/releases/latest/download/scala-cli-x86_64-pc-linux.gz | gzip -d > usr/bin/scala-cli
+          chmod +x usr/bin/scala-cli
+          echo "$(pwd)/usr/bin" >> $GITHUB_PATH
+      - name: Test
+        run: make test

@@ -1,5 +1,7 @@
 //> using scala "2.13.10"
 
+package reflective
+
 import scala.collection.mutable
 import scala.util.matching.Regex
 

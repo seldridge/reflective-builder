@@ -1,8 +1,11 @@
 //> using test.dep org.scalatest::scalatest::3.2.16
 
+package reflectiveSpec
+
 import org.scalatest._
 import flatspec._
 import matchers._
+import reflective.{Exceptions, ReflectiveBuilder}
 
 object Objects {
   case class Foo(a: Int) {
@@ -31,7 +34,7 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
       ReflectiveBuilder.main(
         Array(
           "--object",
-          "Objects$Foo(42)",
+          "reflectiveSpec.Objects$Foo(42)",
           "--method",
           "apply"
         )
@@ -44,7 +47,7 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
       ReflectiveBuilder.main(
         Array(
           "--object",
-          "Objects$Foo(42)",
+          "reflectiveSpec.Objects$Foo(42)",
           "--method",
           "apply",
           "--argument",
@@ -59,7 +62,7 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
       ReflectiveBuilder.main(
         Array(
           "--object",
-          "Objects$Foo(42)",
+          "reflectiveSpec.Objects$Foo(42)",
           "--method",
           "invert",
           "--argument",
@@ -74,11 +77,11 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
       ReflectiveBuilder.main(
         Array(
           "--object",
-          "Objects$Foo(43)",
+          "reflectiveSpec.Objects$Foo(43)",
           "--method",
           "invert",
           "--argument",
-          "Objects$Bar(false)"
+          "reflectiveSpec.Objects$Bar(false)"
         )
       )
     } should contain("Bar(true)")
@@ -89,7 +92,7 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
       ReflectiveBuilder.main(
         Array(
           "--object",
-          "Objects$Foo(43)",
+          "reflectiveSpec.Objects$Foo(43)",
           "--method",
           "echo",
           "--argument",
@@ -98,6 +101,10 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
       )
     } should contain("Hello world!")
   }
+
+  // it should "work better" in {
+
+  // }
 
   "Error behavior of ReflectiveBuilder" should "provide a good error message if the class isn't found" in {
     val exception =
@@ -119,7 +126,7 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
       the[java.lang.ClassNotFoundException] thrownBy ReflectiveBuilder.main(
         Array(
           "--object",
-          "Objects$Foo(43)",
+          "reflectiveSpec.Objects$Foo(43)",
           "--method",
           "invert",
           "--argument",
@@ -137,7 +144,7 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
         ReflectiveBuilder.main(
           Array(
             "--object",
-            "Objects$Foo(43)",
+            "reflectiveSpec.Objects$Foo(43)",
             "--method",
             "bar",
             "--argument",
@@ -147,7 +154,7 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
           )
         )
     exception.getMessage should include(
-      "Class 'Objects$Foo' does not contain method 'bar' that can accept arguments of types 'int, boolean'. (Did you misspell the method name or are using the wrong arguments?)"
+      "Class 'reflectiveSpec.Objects$Foo' does not contain method 'bar' that can accept arguments of types 'int, boolean'. (Did you misspell the method name or are using the wrong arguments?)"
     )
   }
 

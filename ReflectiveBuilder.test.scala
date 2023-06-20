@@ -102,10 +102,6 @@ class ReflectiveBuilderSpec extends AnyFlatSpec with should.Matchers {
     } should contain("Hello world!")
   }
 
-  // it should "work better" in {
-
-  // }
-
   "Error behavior of ReflectiveBuilder" should "provide a good error message if the class isn't found" in {
     val exception =
       the[java.lang.ClassNotFoundException] thrownBy ReflectiveBuilder.main(
